@@ -376,7 +376,21 @@ public enum FlexGrammar implements GrammarRuleKey {
   C_FLOAT_CONSTANT,
   C_CHAR_CONSTANT,
   C_STRING_LITERAL,
-  C_CONSTANT;
+  C_CONSTANT,
+  C_TYPE_SPECIFIER,
+  C_INTEGER_TYPE_SPECIFIER,
+  C_TYPE_QUALIFIER,
+  C_STORAGE_CLASS_SPECIFIER,
+  C_DECLARATION_SPECIFIERS,
+  C_INIT_DECLARATOR,
+  C_INIT_DECLARATOR_LIST,
+  C_INITIALIZER,
+  C_INITIALIZER_LIST,
+  C_DECLARATOR,
+  C_DIRECT_DECLARATOR,
+  C_POINTER_DECLARATOR,
+  C_DECLARATION,
+  C_FAR_NEAR_QUALIFIER;
 
   private static final String UNICODE_LETTER = "\\p{Lu}\\p{Ll}\\p{Lt}\\p{Lm}\\p{Lo}\\p{Nl}";
   private static final String UNICODE_DIGIT = "\\p{Nd}";
@@ -455,7 +469,7 @@ public enum FlexGrammar implements GrammarRuleKey {
     definitions(b);
     xml(b);
     cExpressions(b);
-
+    cDeclarations(b);
     b.setRootRule(PROGRAM);
 
     return b.build();
@@ -651,6 +665,129 @@ public enum FlexGrammar implements GrammarRuleKey {
     b.rule(C_EXPRESSION).is(
         C_ASSIGNMENT_EXPR,
         b.zeroOrMore(COMMA, C_ASSIGNMENT_EXPR));
+  }
+
+  private static void cDeclarations(LexerlessGrammarBuilder b) {
+
+    // ── INTEGER_TYPE_SPECIFIER ──────────────────────────────────────────
+    // All Unisys C integer type combos — LONGER alternatives FIRST.
+    // Manual §2: all are 48 bits on Unisys MCP.
+    b.rule(C_INTEGER_TYPE_SPECIFIER).is(b.firstOf(
+        b.sequence(FlexKeyword.signed, FlexKeyword.LONG, FlexKeyword.INT),
+        b.sequence(FlexKeyword.signed, FlexKeyword.SHORT, FlexKeyword.INT),
+        b.sequence(FlexKeyword.unsigned, FlexKeyword.LONG, FlexKeyword.INT),
+        b.sequence(FlexKeyword.unsigned, FlexKeyword.SHORT, FlexKeyword.INT),
+        b.sequence(FlexKeyword.signed, FlexKeyword.LONG),
+        b.sequence(FlexKeyword.signed, FlexKeyword.SHORT),
+        b.sequence(FlexKeyword.unsigned, FlexKeyword.LONG),
+        b.sequence(FlexKeyword.unsigned, FlexKeyword.SHORT),
+        b.sequence(FlexKeyword.signed, FlexKeyword.INT),
+        b.sequence(FlexKeyword.unsigned, FlexKeyword.INT),
+        b.sequence(FlexKeyword.LONG, FlexKeyword.INT),
+        b.sequence(FlexKeyword.SHORT, FlexKeyword.INT),
+        FlexKeyword.LONG,
+        FlexKeyword.SHORT,
+        FlexKeyword.INT,
+        FlexKeyword.signed,
+        FlexKeyword.unsigned));
+
+    // ── C_FAR_NEAR_QUALIFIER ────────────────────────────────────────────
+    // Unisys MCP extension — §3: requires FARHEAP compiler option.
+    // Can appear before or after type: "__near char nc;" OR "char __far fc;"
+    b.rule(C_FAR_NEAR_QUALIFIER).is(b.firstOf(
+        FlexKeyword.__FAR,
+        FlexKeyword.__NEAR));
+
+    // ── C_TYPE_QUALIFIER ────────────────────────────────────────────────
+    // Manual §3: const, volatile, plus Unisys __far/__near
+    b.rule(C_TYPE_QUALIFIER).is(b.firstOf(
+        FlexKeyword.CONST,
+        FlexKeyword.VOLATILE,
+        C_FAR_NEAR_QUALIFIER));
+
+    // ── C_STORAGE_CLASS_SPECIFIER ───────────────────────────────────────
+    // Manual §3 Table 3-1: all valid storage class specifiers.
+    // NOTE: AUTO is already in FlexKeyword as AS — check your keyword enum.
+    b.rule(C_STORAGE_CLASS_SPECIFIER).is(b.firstOf(
+        FlexKeyword.AUTO,
+        FlexKeyword.EXTERN,
+        FlexKeyword.REGISTER,
+        FlexKeyword.STATIC,
+        FlexKeyword.TYPEDEF,
+        FlexKeyword.inline,
+        FlexKeyword.asm // Unisys MCP: export from library
+    ));
+
+    // ── C_TYPE_SPECIFIER ────────────────────────────────────────────────
+    // Manual §3: all valid type specifiers.
+    // long double = 96 bits on Unisys; plain double = 48 bits (same as float).
+    b.rule(C_TYPE_SPECIFIER).is(b.firstOf(
+        C_INTEGER_TYPE_SPECIFIER,
+        b.sequence(FlexKeyword.LONG, FlexKeyword.DOUBLE), // 96-bit, before plain DOUBLE
+        b.sequence(FlexKeyword.signed, FlexKeyword.CHAR),
+        b.sequence(FlexKeyword.unsigned, FlexKeyword.CHAR),
+        FlexKeyword.DOUBLE,
+        FlexKeyword.FLOAT,
+        FlexKeyword.CHAR,
+        FlexKeyword.VOID
+    // STRUCT_SPECIFIER, UNION_SPECIFIER, ENUM_SPECIFIER — add when those rules
+    // exist
+    ));
+
+    // ── C_DECLARATION_SPECIFIERS ────────────────────────────────────────
+    // Manual §3: opening of any declaration.
+    // One storage class specifier max (enforced by semantic check, not grammar).
+    b.rule(C_DECLARATION_SPECIFIERS).is(
+        b.oneOrMore(b.firstOf(
+            C_STORAGE_CLASS_SPECIFIER,
+            C_TYPE_QUALIFIER,
+            C_TYPE_SPECIFIER)));
+
+    // ── C_INITIALIZER / C_INITIALIZER_LIST ─────────────────────────────
+    // Manual §3: "declarator = value" or "declarator = { list }"
+    // Trailing comma allowed: { 1, 2, 3, }
+    b.rule(C_INITIALIZER_LIST).is(
+        C_INITIALIZER,
+        b.zeroOrMore(b.sequence(COMMA, C_INITIALIZER)));
+    b.rule(C_INITIALIZER).is(b.firstOf(
+        b.sequence(LCURLYBRACE, C_INITIALIZER_LIST, b.optional(COMMA), RCURLYBRACE),
+        C_ASSIGNMENT_EXPR // already defined in cExpressions()
+    ));
+
+    // ── C_DIRECT_DECLARATOR / C_DECLARATOR ─────────────────────────────
+    // Manual §3 declarator syntax: identifier, array[n], array[], func(params)
+    b.rule(C_DIRECT_DECLARATOR).is(
+        b.firstOf(
+            C_IDENTIFIER,
+            b.sequence(LPARENTHESIS, C_DECLARATOR, RPARENTHESIS)),
+        b.zeroOrMore(b.firstOf(
+            b.sequence(LBRAKET, b.optional(C_EXPRESSION), RBRAKET), // array subscript
+            b.sequence(LPARENTHESIS, RPARENTHESIS) // function ()
+        )));
+    // Pointer declarator: *qualifier* declarator (e.g., "int *const ptr")
+    b.rule(C_POINTER_DECLARATOR).is(
+        b.oneOrMore(b.sequence(STAR, b.zeroOrMore(C_TYPE_QUALIFIER))),
+        C_DIRECT_DECLARATOR);
+    b.rule(C_DECLARATOR).is(b.firstOf(
+        C_POINTER_DECLARATOR,
+        C_DIRECT_DECLARATOR));
+
+    // ── C_INIT_DECLARATOR / C_INIT_DECLARATOR_LIST ─────────────────────
+    // Manual §3: "declarator" or "declarator = initializer"
+    b.rule(C_INIT_DECLARATOR).is(b.firstOf(
+        b.sequence(C_DECLARATOR, EQUAL1, C_INITIALIZER),
+        C_DECLARATOR));
+    b.rule(C_INIT_DECLARATOR_LIST).is(
+        C_INIT_DECLARATOR,
+        b.zeroOrMore(b.sequence(COMMA, C_INIT_DECLARATOR)));
+
+    // ── C_DECLARATION ───────────────────────────────────────────────────
+    // Manual §3: the complete declaration statement.
+    // "int x = 0;" "static unsigned long a, b;" "const int *p;"
+    b.rule(C_DECLARATION).is(
+        C_DECLARATION_SPECIFIERS,
+        b.optional(C_INIT_DECLARATOR_LIST),
+        SEMICOLON);
   }
 
   private static void literals(LexerlessGrammarBuilder b) {
@@ -900,6 +1037,7 @@ public enum FlexGrammar implements GrammarRuleKey {
 
   private static void statements(LexerlessGrammarBuilder b) {
     b.rule(STATEMENT).is(b.firstOf(
+        C_DECLARATION,
         METADATA_STATEMENT,
         SUPER_STATEMENT,
         BLOCK,
@@ -987,6 +1125,7 @@ public enum FlexGrammar implements GrammarRuleKey {
 
   private static void directives(LexerlessGrammarBuilder b) {
     b.rule(DIRECTIVE).is(b.firstOf(
+        C_DECLARATION,
         CONFIG_CONDITION,
         EMPTY_STATEMENT,
         ANNOTABLE_DIRECTIVE,
