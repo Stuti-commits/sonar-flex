@@ -26,148 +26,148 @@ import org.sonar.sslr.grammar.GrammarRuleKey;
 
 public enum FlexKeyword implements GrammarRuleKey {
 
-  /**
-   * "as" is not keyword in ActionScript 2, so we treat it as syntactic keyword
-   */
-  asm(true),
-  LONG(true),
-  AUTO(
-      true),
+    /**
+     * "as" is not keyword in ActionScript 2, so we treat it as syntactic keyword
+     */
+    asm(true),
+    LONG(true),
+    AUTO(
+            true),
 
-  ENUM(
-      true),
+    ENUM(
+            true),
 
-  __NEAR(
-      true),
-  EXTERN(
-      true),
+    __NEAR(
+            true),
+    EXTERN(
+            true),
 
-  REGISTER(
-      true),
-  UNION(
-      true),
-  __FAR(
-      true),
-  unsigned(
-      true),
-  CHAR(
-      true),
-  FLOAT(
-      true),
-  SHORT(
-      true),
-  __USER_LOCK__,
-  signed(
-      true),
-  __USER_UNLOCK__(
-      true),
-  GOTO(
-      true),
-  sizeof(
-      true),
-  __STACK_NUMBER__(
-      true),
-  VOLATILE(
-      true),
-  inline(
-      true),
-  TYPEDEF(
-      true),
-  DOUBLE(
-      true),
-  INT(
-      true),
-  STRUCT(
-      true),
-  AS(true),
-  BREAK,
-  CASE,
-  CATCH,
-  CLASS,
-  CONST,
-  CONTINUE,
-  DEFAULT,
-  DELETE,
-  DO,
-  ELSE,
-  EXTENDS,
-  FALSE,
-  FINALLY,
-  FOR,
-  FUNCTION,
-  IF,
-  IMPLEMENTS,
-  IMPORT,
-  IN,
-  INSTANCEOF,
-  INTERFACE,
-  INTERNAL,
-  IS,
+    REGISTER(
+            true),
+    UNION(
+            true),
+    __FAR(
+            true),
+    unsigned(
+            true),
+    CHAR(
+            true),
+    FLOAT(
+            true),
+    SHORT(
+            true),
+    __USER_LOCK__,
+    signed(
+            true),
+    __USER_UNLOCK__(
+            true),
+    GOTO(
+            true),
+    sizeof(
+            true),
+    __STACK_NUMBER__(
+            true),
+    VOLATILE(
+            true),
+    inline(
+            true),
+    TYPEDEF(
+            true),
+    DOUBLE(
+            true),
+    INT(
+            true),
+    STRUCT(
+            true),
+    AS(true),
+    BREAK,
+    CASE,
+    CATCH,
+    CLASS,
+    CONST,
+    CONTINUE,
+    DEFAULT,
+    DELETE,
+    DO,
+    ELSE,
+    EXTENDS,
+    FALSE,
+    FINALLY,
+    FOR,
+    FUNCTION,
+    IF,
+    IMPLEMENTS,
+    IMPORT,
+    IN,
+    INSTANCEOF,
+    INTERFACE,
+    INTERNAL,
+    IS,
 
-  NEW,
-  NULL,
-  PACKAGE,
-  PRIVATE,
-  PROTECTED,
-  PUBLIC,
-  RETURN,
-  SUPER,
-  SWITCH,
-  THIS,
-  THROW,
-  TRUE,
-  TRY,
-  TYPEOF,
-  USE,
-  VAR,
-  VOID,
-  WHILE,
-  WITH,
+    NEW,
+    NULL,
+    PACKAGE,
+    PRIVATE,
+    PROTECTED,
+    PUBLIC,
+    RETURN,
+    SUPER,
+    SWITCH,
+    THIS,
+    THROW,
+    TRUE,
+    TRY,
+    TYPEOF,
+    USE,
+    VAR,
+    VOID,
+    WHILE,
+    WITH,
 
-  EACH(true),
-  GET(true),
-  SET(true),
-  NAMESPACE(true),
-  INCLUDE(true),
-  DYNAMIC(true),
-  FINAL(true),
-  // "native" strangely appears in both the "keywords" and "syntactic keywords"
-  // lists of the language spec
-  // It seems that "native" is accepted as a valid identifier by the compiler and
-  // should be considered as a "syntactic keyword"
-  NATIVE(true),
-  OVERRIDE(true),
-  STATIC(true),
-  XML(true);
+    EACH(true),
+    GET(true),
+    SET(true),
+    NAMESPACE(true),
+    INCLUDE(true),
+    DYNAMIC(true),
+    FINAL(true),
+    // "native" strangely appears in both the "keywords" and "syntactic keywords"
+    // lists of the language spec
+    // It seems that "native" is accepted as a valid identifier by the compiler and
+    // should be considered as a "syntactic keyword"
+    NATIVE(true),
+    OVERRIDE(true),
+    STATIC(true),
+    XML(true);
 
-  private final boolean syntactic;
+    private final boolean syntactic;
 
-  FlexKeyword() {
-    this(false);
-  }
-
-  FlexKeyword(boolean syntactic) {
-    this.syntactic = syntactic;
-  }
-
-  public static String[] keywordValues() {
-    String[] keywordsValue = new String[FlexKeyword.values().length];
-    int i = 0;
-    for (FlexKeyword keyword : FlexKeyword.values()) {
-      keywordsValue[i] = keyword.getValue();
-      i++;
+    FlexKeyword() {
+        this(false);
     }
-    return keywordsValue;
-  }
 
-  public static List<FlexKeyword> keywords() {
-    return Collections.unmodifiableList(Arrays.stream(values())
-        .filter(flexKeyword -> !flexKeyword.syntactic)
-        .collect(Collectors.toList()));
-  }
+    FlexKeyword(boolean syntactic) {
+        this.syntactic = syntactic;
+    }
 
-  public String getValue() {
-    return toString().toLowerCase(Locale.ENGLISH);
-  }
+    public static String[] keywordValues() {
+        String[] keywordsValue = new String[FlexKeyword.values().length];
+        int i = 0;
+        for (FlexKeyword keyword : FlexKeyword.values()) {
+            keywordsValue[i] = keyword.getValue();
+            i++;
+        }
+        return keywordsValue;
+    }
+
+    public static List<FlexKeyword> keywords() {
+        return Collections.unmodifiableList(Arrays.stream(values())
+                .filter(flexKeyword -> !flexKeyword.syntactic)
+                .collect(Collectors.toList()));
+    }
+
+    public String getValue() {
+        return toString().toLowerCase(Locale.ENGLISH);
+    }
 
 }

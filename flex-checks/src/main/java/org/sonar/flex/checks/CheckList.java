@@ -107,7 +107,10 @@ public final class CheckList {
         DefaultCasePositionCheck.class,
         AllBranchesIdenticalCheck.class,
         ParsingErrorCheck.class,
-        CDivisionByZeroCheck.class));
+        CDivisionByZeroCheck.class,
+        CSwitchStructureCheck.class,
+        CFunctionDeclarationCheck.class,
+        CStringManipulationCheck.class));
   }
 
 }
